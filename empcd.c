@@ -194,7 +194,10 @@ mpd_Status *empcd_status()
 
 void f_exec(const char *arg, const char *args)
 {
-	system(arg);
+	if (system(arg) < 0)
+		dolog(LOG_ERR,
+		      "system(arg='%s') failed, errno=%d : %m\n",
+		      arg, errno);
 }
 
 void f_quit(const char *arg, const char *args)
@@ -479,7 +482,7 @@ bool which_func(char *buf, unsigned int len, unsigned int *o_, unsigned int *fun
 */
 bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd_mapping *value_map)
 {
-	unsigned int	i = 0, o = 0, len = strlen(buf), l,
+	unsigned int	i = 0, o = 0, len = strlen(buf), l = 0,
 			event = 0, event_code = 0,
 			value = 0, func = 0;
 	void		(*what)(char *arg);
@@ -1120,9 +1123,18 @@ int main (int argc, char **argv)
 		setsid();
 
 		/* Cleanup stdin/out/err */
-		freopen("/dev/null","r",stdin);
-		freopen("/dev/null","w",stdout);
-		freopen("/dev/null","w",stderr);
+		if (! freopen("/dev/null","r",stdin))
+			dolog(LOG_ERR,
+			      "freopen() stdin -> /dev/null failed, errno=%d : %m\n",
+			      errno);
+		if (! freopen("/dev/null","w",stdout))
+			dolog(LOG_ERR,
+			      "freopen() stdout -> /dev/null failed, errno=%d : %m\n",
+			      errno);
+		if (! freopen("/dev/null","w",stderr))
+			dolog(LOG_ERR,
+			      "freopen() stderr -> /dev/null failed, errno=%d : %m\n",
+			      errno);
 	}
 
 	/* Handle these signals for a clean exit */
